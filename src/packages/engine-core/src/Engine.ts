@@ -7,6 +7,7 @@ import {
 import { getLogs } from '@prisma/debug'
 import { getGithubIssueUrl, link } from './util'
 import stripAnsi from 'strip-ansi'
+import { NodeEngine } from './NodeEngine'
 
 export function getMessage(log: string | RustLog | RustError | any): string {
   if (typeof log === 'string') {
@@ -83,21 +84,17 @@ export class PrismaClientInitializationError extends Error {
 }
 
 export interface ErrorWithLinkInput {
-  version: string
-  platform: string
   title: string
   description?: string
 }
 
-export function getErrorMessageWithLink({
-  version,
-  platform,
-  title,
-  description,
-}: ErrorWithLinkInput) {
+export function getErrorMessageWithLink(
+  engine: NodeEngine,
+  options?: ErrorWithLinkInput,
+) {
   const logs = normalizeLogs(stripAnsi(getLogs()))
-  const moreInfo = description
-    ? `# Description\n\`\`\`\n${description}\n\`\`\``
+  const moreInfo = options?.description
+    ? `# Description\n\`\`\`\n${options.description}\n\`\`\``
     : ''
   const body = stripAnsi(
     `Hi Prisma Team! My Prisma Client just crashed. This is the report:
@@ -106,19 +103,31 @@ export function getErrorMessageWithLink({
 | Name            | Version            |
 |-----------------|--------------------|
 | Node            | ${process.version.padEnd(19)}| 
-| OS              | ${platform.padEnd(19)}|
-| Prisma Client   | ${version.padEnd(19)}|
+| OS              | ${engine.platform.padEnd(19)}|
+| Prisma Client   | ${engine.clientVersion.padEnd(19)}|
+| Datasources     | ${engine.datasources.map((datasource) => datasource.name)}|
 
 ${moreInfo}
 
+## Prisma Schema
+\`\`\`prisma
+\`\`\`
+
+## Code Snippets
+\`\`\`typescript
+\`\`\`
+
 ## Logs
 \`\`\`
-${logs}
+${engine.stderrLogs}
 \`\`\``,
   )
 
-  const url = getGithubIssueUrl({ title, body })
-  return `${title}
+  const url = getGithubIssueUrl({ title: options?.title, body })
+  if(url.length >= 2048){
+
+  } 
+  return `${options?.title}
 
 This is a non-recoverable error which probably happens when the Prisma Query Engine has a panic.
 
@@ -126,6 +135,9 @@ ${link(url)}
 
 If you want the Prisma team to look into it, please open the link above 🙏
 `
+}
+function saveError(content: string){
+
 }
 
 /**

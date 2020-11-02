@@ -107,7 +107,7 @@ export class NodeEngine {
   private enableDebugLogs: boolean
   private enableEngineDebugMode: boolean
   private child?: ChildProcessWithoutNullStreams
-  private clientVersion?: string
+  clientVersion?: string
   private lastPanic?: Error
   private globalKillSignalReceived?: string
   private restartCount: number = 0
@@ -751,11 +751,9 @@ You very likely have the wrong "binaryTarget" defined in the schema.prisma file.
           this.undici?.close()
           if (code === null && signal === 'SIGABRT' && this.child) {
             const error = new PrismaClientRustPanicError(
-              getErrorMessageWithLink({
-                platform: this.platform,
+              getErrorMessageWithLink(this, {
                 title: `Panic in Query Engine with SIGABRT signal`,
                 description: this.stderrLogs,
-                version: this.clientVersion,
               }),
               this.clientVersion,
             )
@@ -769,11 +767,9 @@ You very likely have the wrong "binaryTarget" defined in the schema.prisma file.
             !this.lastPanic
           ) {
             const error = new PrismaClientRustPanicError(
-              getErrorMessageWithLink({
-                platform: this.platform,
+              getErrorMessageWithLink(this, {
                 title: `${this.lastErrorLog.fields.message}: ${this.lastErrorLog.fields.reason} in
 ${this.lastErrorLog.fields.file}:${this.lastErrorLog.fields.line}:${this.lastErrorLog.fields.column}`,
-                version: this.clientVersion,
               }),
               this.clientVersion,
             )
@@ -1073,20 +1069,16 @@ ${this.lastErrorLog.fields.file}:${this.lastErrorLog.fields.line}:${this.lastErr
       // TODO: Replace these errors with known or unknown request errors
       if (this.lastError.is_panic) {
         err = new PrismaClientRustPanicError(
-          getErrorMessageWithLink({
-            platform: this.platform,
+          getErrorMessageWithLink(this, {
             title: getMessage(this.lastError),
-            version: this.clientVersion,
           }),
           this.clientVersion,
         )
         this.lastPanic = err
       } else {
         err = new PrismaClientUnknownRequestError(
-          getErrorMessageWithLink({
-            platform: this.platform,
+          getErrorMessageWithLink(this, {
             title: getMessage(this.lastError),
-            version: this.clientVersion,
           }),
           this.clientVersion,
         )
@@ -1094,20 +1086,16 @@ ${this.lastErrorLog.fields.file}:${this.lastErrorLog.fields.line}:${this.lastErr
     } else if (this.currentRequestPromise.isCanceled && this.lastErrorLog) {
       if (this.lastErrorLog?.fields?.message === 'PANIC') {
         err = new PrismaClientRustPanicError(
-          getErrorMessageWithLink({
-            platform: this.platform,
+          getErrorMessageWithLink(this, {
             title: getMessage(this.lastErrorLog),
-            version: this.clientVersion,
           }),
           this.clientVersion,
         )
         this.lastPanic = err
       } else {
         err = new PrismaClientUnknownRequestError(
-          getErrorMessageWithLink({
-            platform: this.platform,
+          getErrorMessageWithLink(this, {
             title: getMessage(this.lastErrorLog),
-            version: this.clientVersion,
           }),
           this.clientVersion,
         )
@@ -1140,20 +1128,16 @@ Please look into the logs or turn on the env var DEBUG=* to debug the constantly
       if (this.lastError) {
         if (this.lastError.is_panic) {
           err = new PrismaClientRustPanicError(
-            getErrorMessageWithLink({
-              platform: this.platform,
+            getErrorMessageWithLink(this, {
               title: getMessage(this.lastError),
-              version: this.clientVersion,
             }),
             this.clientVersion,
           )
           this.lastPanic = err
         } else {
           err = new PrismaClientUnknownRequestError(
-            getErrorMessageWithLink({
-              platform: this.platform,
+            getErrorMessageWithLink(this, {
               title: getMessage(this.lastError),
-              version: this.clientVersion,
             }),
             this.clientVersion,
           )
@@ -1161,20 +1145,16 @@ Please look into the logs or turn on the env var DEBUG=* to debug the constantly
       } else if (this.lastErrorLog) {
         if (this.lastErrorLog?.fields?.message === 'PANIC') {
           err = new PrismaClientRustPanicError(
-            getErrorMessageWithLink({
-              platform: this.platform,
+            getErrorMessageWithLink(this, {
               title: getMessage(this.lastErrorLog),
-              version: this.clientVersion,
             }),
             this.clientVersion,
           )
           this.lastPanic = err
         } else {
           err = new PrismaClientUnknownRequestError(
-            getErrorMessageWithLink({
-              platform: this.platform,
+            getErrorMessageWithLink(this, {
               title: getMessage(this.lastErrorLog),
-              version: this.clientVersion,
             }),
             this.clientVersion,
           )
@@ -1195,10 +1175,8 @@ Please look into the logs or turn on the env var DEBUG=* to debug the constantly
           `signalCode: ${this.child?.signalCode} | exitCode: ${this.child?.exitCode} | killed: ${this.child?.killed}\n` +
           description
         err = new PrismaClientUnknownRequestError(
-          getErrorMessageWithLink({
-            platform: this.platform,
+          getErrorMessageWithLink(this, {
             title,
-            version: this.clientVersion,
             description,
           }),
           this.clientVersion,
